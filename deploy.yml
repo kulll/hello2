@@ -1,15 +1,27 @@
----
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
+  name: hello2-deployment
   labels:
     app: hello2-pod
-  name: hello2-pod
 spec:
-  containers:
-  - args:
-    - apache2-foreground
-    image: ghcr.io/kulll/hello2:latest
-    name: hello2
-    ports:
-    - containerPort: 80
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello2-pod
+  template:
+    metadata:
+      labels:
+        app: hello2-pod
+    spec:
+      containers:
+      - name: hello2-pod
+        args:
+        - apache2-foreground
+        image: ghcr.io/kulll/hello2:latest
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 80
+        env:
+        - name: build-num
+          value: 'build-num-string'
