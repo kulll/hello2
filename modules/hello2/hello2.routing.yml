@@ -1,0 +1,7 @@
+hello2:
+  path: '/hello2'
+  defaults:
+    _title: 'Hello2'
+    _controller: '\Drupal\hello2\Controller\Hello2Controller'
+  requirements:
+    _permission: 'access content'

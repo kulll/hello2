@@ -1,0 +1,98 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hello2-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello2-deployment
+  labels:
+    app: hello2-pod
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: hello2-pod
+  template:
+    metadata:
+      labels:
+        app: hello2-pod
+    spec:
+      initContainers:
+      - name: init-sites-volume
+        image: ghcr.io/kulll/hello2:latest
+        command: ['/bin/bash', '-c']
+        args:
+        - |
+          [[ -f /data/sites/default/settings.php ]] || ( drush si --db-url=mysql://root:password@mycluster:3306/hello2 --account-pass=password -y && drush pm:install hello2 -y && drush config:set system.site page.front /hello2 -y && mv /var/www/html/sites /data && chown www-data:www-data -R /data/sites )
+        volumeMounts:
+        - name: hello2-data
+          mountPath: /data
+      containers:
+      - name: hello2-pod
+        args:
+        - apache2-foreground
+        image: ghcr.io/kulll/hello2:latest
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 80
+        env:
+        - name: build-num
+          value: 'build-num-string'
+        volumeMounts:
+        - name: hello2-data
+          mountPath: /var/www/html/sites
+          subPath: sites
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "drush cache:rebuild"]
+      volumes:
+      - name: hello2-data
+        persistentVolumeClaim:
+          claimName: hello2-data
+      securityContext:
+        fsGroup: 33
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: hello2-svc
+spec:
+  selector:
+    app: hello2-pod
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello2
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: hello2.192.168.124.237.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hello2-svc
+                port:
+                  number: 80
