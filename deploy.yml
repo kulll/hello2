@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: hello2-pod
+  name: hello2-pod
+spec:
+  containers:
+  - args:
+    - apache2-foreground
+    image: ghcr.io/kulll/hello2:latest
+    name: hello2
+    ports:
+    - containerPort: 80
