@@ -16,7 +16,7 @@ final class Hello2Controller extends ControllerBase {
 
     $build['content'] = [
       '#type' => 'item',
-      '#markup' => $this->t('Tom Cruise'),
+      '#markup' => $this->t('Taylor Swift'),
     ];
 
     return $build;
